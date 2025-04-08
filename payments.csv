@@ -1,0 +1,4 @@
+Invoice_No,Student_Id,Student_Name,Parent_Name,Address,Postal_Code,UEN,Billing_Date,Due_Date,Amount,GST,Total_Amount,Description,Remarks
+INV1000,S2000,Joanne Lin,Elizabeth Gonzalez,840 Ramirez Isle Lake Robert FL ,292418,20145678K,2024-03-21,2024-04-17,352.67,31.74,384.41,Math Workshop,Paid
+INV1001,S2001,Dominaka Egoslava,Heather Cook,Unit 8699 Box 9730 DPO AE ,317979, 20139467K,2024-03-22,2024-04-19,146.23,13.16,159.39,Coding Class,Pending
+INV1002,S2002,Diddy,Nicholas Myers,931 Alexander Mountains East Stephanie MN ,042973,20164387K,2024-03-23,2024-04-09,401.35,36.12,437.47,Science Lab,N/A
