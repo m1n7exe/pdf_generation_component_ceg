@@ -1,177 +1,88 @@
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.pdfgen import canvas
-import os
+from flask import Flask, request, render_template, redirect, url_for
+from pdf_generation import generate_pdf, generate_all_invoices_from_csv
+from csv_datahandling import generate_invoice_id, save_to_csv
 import csv
+import os
 
-#variables
-x = 50
+csv_filepath = "payments.csv"
 csv_file_path = "payments.csv"
-#not using csv file because unsure whether it is center specific or just skool4kids, 
-# setting them as varibles first
 
-center_logo = 'testing_assets/Skool4Kidz-logo.png'
-center_name = 'SKOOL4KIDZ PTE LTD'
-center_address = "BLK 24 Marsiling Drive"
-center_postal_code = "730024"
-center_phone_number = "6368 9244"
-center_fax_number = "6368 9243"
-center_email = "marsilingcc@skool4kidz.com.sg"
-center_url = "www.skool4kidz.com.sg"
+app = Flask(__name__)
 
-# Function to create a PDF receipt
-def generate_pdf(entry, filename):
-    c = canvas.Canvas(filename, pagesize=A4)
-    width, height = A4
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-    # Title
-
-    y_position_client = 545 
-    y_position = 0
-    center_yposition = height - 50
+@app.route('/submit_invoice_details', methods=['POST'])
+def handle_form_submission():
+    print("Form submitted.")
     
-    #c.setFont("Helvetica", 10)
-    #C:\pdf_generation_component\testing_assets\Skool4Kidz-logo.png
-    c.drawImage(center_logo, 50 , 700, width=180, height=90)
+    student_id = request.form.get('Student_Id')
+    student_name = request.form.get('Student_Name')
+    parent_name = request.form.get('Parent_Name')
+    address = request.form.get('Address')
+    postal_code = request.form.get('Postal_Code')
+    billing_date = request.form.get('Billing_Date')
+    due_date = request.form.get('Due_Date')
+    description = request.form.get('Description')
+    amount = request.form.get('Amount')
+    gst = request.form.get('GST')
+    payment_mode = request.form.get('paymentMode')
+    remarks = request.form.get('Remarks')
     
-
-    c.setFont("Helvetica", 10)
-
-    # Center Details
-    center_info = [
-    (center_name, 685),
-    (center_address, 670),
-    (f"SINGAPORE {center_postal_code}", 655),
-    (f"Tel: {center_phone_number}", 640),
-    (f"Fax: {center_fax_number}", 625),
-    (center_email, 610),
-    (center_url, 595)
-    ]
-
-    for text, y2_position in center_info:
-        c.drawString(50, y2_position, text)
-
-
-    #Client/Customer Details
-    c.drawString(50, y_position_client + 15, "To:")
-    c.drawString(50, y_position_client, f"Student: {entry['Student_Name']}")
-    y_position_client -= 15
-    c.drawString(50, y_position_client, f"Parent/ Guardian: {entry['Parent_Name']}")
-    y_position_client -= 15
-    c.drawString(50, y_position_client, f"Address: {entry['Address']}")
-    y_position_client -= 15
-    c.drawString(50, y_position_client, f"SNGAPORE: {entry['Postal_Code']}")
-    y_position_client -= 15
-
-
-    #Billing Information
+    #sample data and varaibles before working ore on the functions
+    #for the rest of the data
+    invoice_id = "INV9999"
+    uen = "12345678"
+    total_amount = float(amount) + float(gst)  # You can convert strings to float for calculation
 
 
 
-
-    c.drawString(50, y_position, f"Invoice No: {entry['Invoice_No']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Student ID: {entry['Student_Id']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Student Name: {entry['Student_Name']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Parent Name: {entry['Parent_Name']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Address: {entry['Address']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"UEN: {entry['UEN']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Billing Date: {entry['Billing_Date']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Due Date: {entry['Due_Date']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Amount: ${float(entry['Amount']):.2f}")
-    y_position -= 15
-    c.drawString(50, y_position, f"GST: ${float(entry['GST']):.2f}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Total Amount: ${float(entry['Total_Amount']):.2f}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Description: {entry['Description']}")
-    y_position -= 15
-    c.drawString(50, y_position, f"Remarks: {entry['Remarks']}")
-    y_position -= 15
-
-    #making a table
+    # Print all the form data to check if anything is missing
+    print("Form Data:")
+    print(f"Student ID: {student_id}, Student Name: {student_name}, Parent Name: {parent_name}")
     
-    #drawing an image
-    c.drawImage("testing_assets/qr_code_testing.jpg", 450, 680, width=100, height=100)
+    invoice_data = [
+        invoice_id, 
+        student_id,
+        student_name,
+        parent_name,
+        address,
+        postal_code,
+        uen,
+        total_amount,
+        billing_date,
+        due_date,
+        amount,
+        gst,
+        description,
+        payment_mode,
+        remarks]
     
-    # Assume 'c' is your canvas and 'entry' is a dictionary with 'Amount' as a key
+    print("Invoice Data:")
+    print(invoice_data)
+    
+    # Save to CSV
+    save_to_csv(invoice_data)
+    #this part is not working properly, it is not generating invoice 9999
+    with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
+        reader = list(csv.DictReader(csvfile))
+        last_entry = reader[-1]
+
+        # ⚠️ Optional: print the last entry to debug
+        print("Last entry to generate PDF:", last_entry)
+
+        filename = os.path.join("Bill_Payments", f"{last_entry['Invoice_No']}_invoice.pdf")
+        os.makedirs("Bill_Payments", exist_ok=True)
+        generate_pdf(last_entry, filename)
+
+    return redirect(url_for('payment'))
 
 
-
-    x = 50                  # Left margin
-    y = height - 380       # Starting Y position from top
-    cell_width = 130        # Width of each cell
-
-    data = [
-        ['DESCRIPTION', 'AMOUNT', 'GST', 'SUB TOTAL'],
-        [f"{entry['Description']}", f"{float(entry['Amount']):.2f}", f"{float(entry['GST'])}", f"{float(entry['Total_Amount']):.2f}"],
-        ["Total Payable (S$)", f"{float(entry['Amount']):.2f}", f"{float(entry['GST'])}", f"{float(entry['Total_Amount']):.2f}"],
-    ]
-
-        # Predefine the heights row-wise (taller middle row)
-    row_heights = [40, 200, 40]
-    column_widths = [200, 100, 100, 100]
-
-    for row in range(len(data)):
-        row_height = row_heights[row]
-        cell_y = y - sum(row_heights[:row])  # Adjust Y based on previous rows
-
-        cell_x = x  # Reset x at the beginning of each row
-
-        for col in range(len(data[row])):
-            col_width = column_widths[col]
-
-            if row == 0:
-                c.setFillColor(colors.lightblue)
-            elif row == 1:
-                c.setFillColor(colors.whitesmoke)
-            else:
-                c.setFillColor(colors.lightgrey)
-
-            
-            c.rect(cell_x, cell_y - row_height, col_width, row_height, fill=1, stroke=1)
-
-            # Set text color back to black (optional)
-            c.setFillColor(colors.black)
-            
-            # Draw the cell border
-            #c.rect(cell_x, cell_y - row_height, col_width, row_height)
-
-            # Position text vertically 20 points from top of cell
-            text_y = cell_y - 20
-
-            if row == 0:
-                # Centered text for header
-                center_x = cell_x + col_width / 2
-                c.drawCentredString(center_x, text_y, str(data[row][col]))
-            else:
-                # Left-aligned for other rows
-                c.drawString(cell_x + 5, text_y, str(data[row][col]))
-
-            # Move to the next column's x-position
-            cell_x += col_width
-
-    c.save()
+@app.route('/payment')
+def payment():
+    return render_template("payment.html")
 
 
-
-# Create output directory
-output_dir = "Bill_Payments"
-os.makedirs(output_dir, exist_ok=True)
-print("directory has been created")
-
-# Read the CSV file and generate PDFs
-with open(csv_file_path, newline='', encoding='utf-8') as csvfile:
-    reader = csv.DictReader(csvfile)
-    for row in reader:
-        filename = os.path.join(output_dir, f"{row['Invoice_No']}_invoice.pdf")
-        generate_pdf(row, filename)
-        print("Generating Payments")
-        print(f"Generated: {filename}")
+if __name__ == '__main__':
+    app.run(debug=True)
